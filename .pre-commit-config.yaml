@@ -1,0 +1,42 @@
+# Pre-commit hooks. Run on every `git commit`.
+# Setup (one-time): `uv run pre-commit install`
+# Run on all files: `uv run pre-commit run --all-files`
+# Bump pinned revs:  `uv run pre-commit autoupdate`
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-toml
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: check-merge-conflict
+      - id: detect-private-key
+
+  # Ruff: lint + format. Keep the rev in sync with the dev dep in pyproject.toml.
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.12
+    hooks:
+      - id: ruff
+        args: ["--fix"]
+      - id: ruff-format
+
+  # Mypy needs to see your runtime deps to type-check imports.
+  # Add libraries here as you add them to [project.dependencies].
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.20.0
+    hooks:
+      - id: mypy
+        args: ["--config-file=pyproject.toml"]
+        additional_dependencies:
+          - pydantic>=2.13.3
+          - structlog>=25.5.0
+          - openai>=2.33.0
+          - httpx>=0.28.1
+          - tenacity>=9.1.4
+        # Only type-check our own source. Avoid scanning tests on every commit
+        # (they're often noisier and you don't want a hook timeout).
+        files: ^src/
