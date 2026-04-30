@@ -11,9 +11,11 @@ requires-python = ">=3.12"
 keywords = ["multi-agent", "llm", "mutation-testing", "test-generation"]
 dependencies = [
     "httpx>=0.28.1",
+    "mutmut>=3.5.0",
     "openai>=2.33.0",
     "pydantic>=2.13.3",
     "python-dotenv>=1.2.2",
+    "rich>=15.0.0",
     "structlog>=25.5.0",
     "tenacity>=9.1.4",
 ]
