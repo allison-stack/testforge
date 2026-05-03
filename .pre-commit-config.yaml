@@ -37,6 +37,7 @@ repos:
           - openai>=2.33.0
           - httpx>=0.28.1
           - tenacity>=9.1.4
+          - python-dotenv>=1.2.2
         # Only type-check our own source. Avoid scanning tests on every commit
         # (they're often noisier and you don't want a hook timeout).
         files: ^src/
