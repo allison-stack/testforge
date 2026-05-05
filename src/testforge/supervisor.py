@@ -36,7 +36,7 @@ class Supervisor:
     # stop Orchestrator loop
     def should_stop(self) -> str | None:
         """
-        Return a reason string if we should stop (None by default)
+        Return a reason string if there is a reason to stop (None by default)
         """
         if self.retry_count >= self.max_retries:
             return "max_retries"
