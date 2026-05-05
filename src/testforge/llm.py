@@ -1,10 +1,9 @@
 """
-Model router — the single place all LLM calls go through.
+Model router
+- The one place all LLM calls go through
 
 WHY IT MATTERS
-    Every agent (Author, Judge, Supervisor) calls `call_llm`. If you ever
-    want to add caching, retries, logging, or swap providers, this is the
-    one file you change.
+- Every agent (Author, Judge, Supervisor) calls `call_llm`
 """
 
 import os
@@ -12,6 +11,7 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 
+# loads environment variables like OpenRouter API key
 load_dotenv()
 
 _client = OpenAI(
@@ -24,19 +24,19 @@ def call_llm(
     model: str, system: str, user: str, *, temperature: float = 0.2, max_tokens: int = 2000
 ) -> tuple[str, int]:
     """
-    Single LLM call. Returns (text, total_tokens_used)
+    A single LLM call
 
     Args:
-        model: OpenRouter model id (e.g. "openai/gpt-oss-120b:free")
-        system: System prompt — the agent's role definition
-        user: User message — the actual input for this call
+        model: OpenRouter model id
+        system: System prompt
+        user: User message
         temperature: 0.0 to 1.0
-        max_tokens: Cap on output length
+        max_tokens: Limit output length
 
     Returns:
-        (output_text, total_tokens) note that `total_tokens` includes both prompt
-        and output
+        (output_text, total_tokens)
     """
+    # generated response given system and user prompt to the llm
     response = _client.chat.completions.create(
         model=model,
         messages=[
@@ -47,5 +47,6 @@ def call_llm(
         max_tokens=max_tokens,
     )
     text = response.choices[0].message.content or ""
+    # track token usage
     tokens = response.usage.total_tokens if response.usage else 0
     return text, tokens

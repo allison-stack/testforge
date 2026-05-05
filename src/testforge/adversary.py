@@ -1,17 +1,16 @@
 """
-Adversary — generates "bugs that could plausibly exist" for the target
-
-WHAT THIS IS
-    A wrapper around mutmut
+Adversary
+- Generates bugs that could plausibly exist (e.g., due to human error) for the target
 
 WHY IT MATTERS
-    The mutations are the test of the test. If the Author's test passes on the original code AND on
-    some/every mutation, the test is testing nothing.
-    Mutmut handles ~80% of useful mutation operators for free, with zero API spend,
-    instantly, deterministically.
+- The mutations are the test of the test
+- If the Author's test passes on the original code and on
+  some mutation, the test is not good
+- Mutmut handles ~80% of useful mutation operators for free,
+  and deterministically
 
-FEATURES TO IMPLEMENT IN THE FUTURE
-    Adding an LLM-based Adversary that produces "semantic" mutations
+FEATURES TO IMPLEMENT
+- Adding an LLM-based Adversary that produces "semantic" mutations
 """
 
 import subprocess
@@ -21,26 +20,27 @@ from pathlib import Path
 
 def generate_mutations(target_code: str) -> list[str]:
     """
-    Generate mutated versions of the target function.
+    Generate mutated versions of the target function
 
     Args:
         target_code: Full source of the target function
 
     Returns:
-        List of mutated source strings. Each will be a replacement
-        for `target_code`.
+        List of mutated source strings
     """
+    # create individual temporary environment for mutations
     with tempfile.TemporaryDirectory() as d:
         Path(d, "target.py").write_text(target_code, encoding="utf-8")
         Path(d, "pyproject.toml").write_text(
             '[tool.mutmut]\npaths_to_mutate = ["target.py"]\n',
             encoding="utf-8",
         )
-        # generate mutations
+        # run mutmut
         subprocess.run(["python", "-m", "mutmut", "run"], cwd=d, capture_output=True)
         result = subprocess.run(
             ["python", "-m", "mutmut", "results"], cwd=d, capture_output=True, text=True
         )
+        # store ids of all generated mutations
         ids = [
             line.split(":")[0].strip()
             for line in result.stdout.strip().splitlines()
@@ -48,12 +48,14 @@ def generate_mutations(target_code: str) -> list[str]:
         ]
         mutations = []
         for mutant_id in ids:
+            # get diff for each mutation
             show = subprocess.run(
                 ["python", "-m", "mutmut", "show", mutant_id],
                 cwd=d,
                 capture_output=True,
                 text=True,
             )
+            # get full mutated source string
             patched = subprocess.run(
                 ["patch", "-o", "-", "target.py"],
                 input=show.stdout,
