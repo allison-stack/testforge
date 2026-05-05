@@ -33,7 +33,9 @@ from .llm import call_llm
 _PROMPT_PATH = Path(__file__).parent / "prompts" / "author.txt"
 
 
-def author(target_code: str, model: str = "openai/gpt-oss-120b:free") -> tuple[str, int]:
+def author(
+    target_code: str, model: str = "openai/gpt-oss-120b:free", critique: str | None = None
+) -> tuple[str, int]:
     """
     Generate a pytest test for `target_code`.
 
@@ -44,14 +46,24 @@ def author(target_code: str, model: str = "openai/gpt-oss-120b:free") -> tuple[s
     Returns:
         (test_code, tokens_used)
     """
-    # 1. system_prompt = _PROMPT_PATH.read_text()
+    # system prompt
     system_prompt = _PROMPT_PATH.read_text()
-    # 2. user_msg = f"Write a single pytest function for:\n\n{target_code}"
-    user_prompt = f"""Write a pytest test for the given target code:\n
+
+    # user prompt
+    user_prompt = f"""Write a single pytest function for the given target code:\n
     {target_code}"""
-    # 3. text, tokens = call_llm(model, system_prompt, user_msg)
+
+    # previous test case not good enough, mutations have survived
+    if critique:
+        user_prompt += f"""\n\nThe previous test was not robust enough.
+        The test passed on some mutation.
+        Use this feedback to improve the test:\n{critique}"""
+
+    # let GPT generate test case
     text, tokens = call_llm(model, system_prompt, user_prompt)
-    # 4. strip ```python fences from text if present
+
+    # strip ```python fences from output
     text = re.sub(r"^```python\n|```$", "", text, flags=re.MULTILINE)
-    # 5. return text, tokens
+
+    # return generated test case and tokens used
     return text, tokens
