@@ -43,5 +43,5 @@ class Supervisor:
         if self.tokens_used >= self.max_tokens:
             return "token_budget"
         if time.time() - self.start_time >= self.max_seconds:
-            return "wall_clock"
+            return "timeout"
         return None

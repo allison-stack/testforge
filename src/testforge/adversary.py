@@ -13,9 +13,15 @@ FEATURES TO IMPLEMENT
 - Adding an LLM-based Adversary that produces "semantic" mutations
 """
 
+import ast
+import re
 import subprocess
 import tempfile
 from pathlib import Path
+
+from .llm import call_llm
+
+_PROMPT_PATH = Path(__file__).parent / "prompts" / "adversary.txt"
 
 
 def generate_mutations(target_code: str) -> list[str]:
@@ -67,3 +73,43 @@ def generate_mutations(target_code: str) -> list[str]:
             if mutated:
                 mutations.append(mutated)
         return mutations
+
+
+def generate_llm_mutations(
+    target_code: str, model: str = "openai/gpt-oss-120b:free"
+) -> tuple[list[str], int]:
+    """
+    Generate semantic mutations using an LLM adversary.
+
+    Args:
+        target_code: Full source of the target function
+        model: OpenRouter model
+
+    Returns:
+        (list of mutated source strings, tokens_used)
+    """
+    # system prompt
+    system_prompt = _PROMPT_PATH.read_text()
+
+    # user prompt
+    user_prompt = (
+        "Generate mutations as complete, runnable functions "
+        f"for the following code:\n\n{target_code}"
+    )
+
+    # call model to generate mutations
+    text, tokens = call_llm(model, system_prompt, user_prompt)
+
+    # parse text into a list of mutated source strings
+    extracted = re.findall(r"===MUTATION===\s*(.*?)\s*===END===", text, re.DOTALL)
+    mutations = []
+    for block in extracted:
+        block = block.strip()
+        if not block or block == target_code.strip() or block in mutations:
+            continue
+        try:
+            ast.parse(block)
+        except SyntaxError:
+            continue
+        mutations.append(block)
+    return mutations, tokens
