@@ -11,7 +11,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--author_model",
-        default="gpt-oss-120b:free",
+        default="openai/gpt-oss-120b:free",
         help="Name of LLM model to be used for Author agent",
     )
     parser.add_argument(

@@ -49,7 +49,7 @@ def run_cycle(
     target_name: str,
     *,
     author_model: str = "openai/gpt-oss-120b:free",
-    judge_model: str = "z-ai/glm-4.5-air:free",
+    judge_model: str = "poolside/laguna-m.1:free",
 ) -> CycleResult:
     """
     Runs a full cycle on a single target function

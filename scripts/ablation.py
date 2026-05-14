@@ -108,12 +108,12 @@ def count_change(amount: int, coins: list[int]) -> int:
 
 CONFIGS: dict[str, dict[str, str]] = {
     "homogeneous": {
-        "author_model": "openrouter/owl-alpha",
-        "judge_model": "openrouter/owl-alpha",
+        "author_model": "openai/gpt-oss-120b:free",
+        "judge_model": "openai/gpt-oss-120b:free",
     },
     "heterogeneous": {
-        "author_model": "poolside/laguna-m.1:free",
-        "judge_model": "openrouter/owl-alpha",
+        "author_model": "openai/gpt-oss-120b:free",
+        "judge_model": "poolside/laguna-m.1:free",
     },
 }
 
