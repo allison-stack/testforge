@@ -36,7 +36,8 @@ def author(
     user_prompt = f"""Write a single pytest function for the given target code:\n
     {target_code}"""
 
-    # previous test case not good enough as it passed on some mutation
+    # if critique exists: previous test case not good enough as it passed on some mutation
+    # (mutation not killed)
     if critique:
         user_prompt += f"""\n\nThe previous test was weak,
         it passed on some mutation during mutation testing.

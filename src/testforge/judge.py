@@ -4,7 +4,8 @@ Judge
 
 WHY IT MATTERS
 - The Judge runs on a different model family than the Author
-- Same-model judges share blind spots while different-model judges catch them
+- Hypothesis to be tested: Same-model judges share blind spots while different-model judges
+  catch them
 - Ablation experiment:
     - Homogeneous model run: Author=GPT, Judge=GPT
     - Heterogeneous model run: Author=GPT, Judge=Laguna

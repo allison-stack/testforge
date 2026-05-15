@@ -51,12 +51,12 @@ def run_test(
     Returns:
         List of mutated source strings
     """
-    # create Docker environment to run tests in
+    # create temp Docker environment to run tests in
     with tempfile.TemporaryDirectory() as d:
         Path(d, "target.py").write_text(target_code, encoding="utf-8")
         Path(d, "test_target.py").write_text(test_code, encoding="utf-8")
         try:
-            # mount /work directory into a Docker container
+            # mount /work directory into Docker container
             result = subprocess.run(
                 ["docker", "run", "--rm", "-v", f"{d}:/work", "-w", "/work", image, "pytest", "-q"],
                 capture_output=True,

@@ -41,7 +41,7 @@ def generate_mutations(target_code: str) -> list[str]:
             '[tool.mutmut]\npaths_to_mutate = ["target.py"]\n',
             encoding="utf-8",
         )
-        # run mutmut
+        # run mutmut on target code
         subprocess.run(["python", "-m", "mutmut", "run"], cwd=d, capture_output=True)
         result = subprocess.run(
             ["python", "-m", "mutmut", "results"], cwd=d, capture_output=True, text=True
@@ -97,7 +97,7 @@ def generate_llm_mutations(
         f"for the following code:\n\n{target_code}"
     )
 
-    # call model to generate mutations
+    # llm to generates semantic mutations (mutmut handles the syntactic mutations)
     text, tokens = call_llm(model, system_prompt, user_prompt)
 
     # parse text into a list of mutated source strings
@@ -105,10 +105,12 @@ def generate_llm_mutations(
     mutations = []
     for block in extracted:
         block = block.strip()
+        # avoid parsing empty or repeat mutations
         if not block or block == target_code.strip() or block in mutations:
             continue
         try:
             ast.parse(block)
+        # avoid adding mutations with syntax errors to mutations list
         except SyntaxError:
             continue
         mutations.append(block)
