@@ -77,6 +77,18 @@ def run_cycle(
         # run test created by author
         result = run_test(target_code, test_code)
         if not result.passed:
+            write_trace(
+                target_name,
+                {
+                    "target_name": target_name,
+                    "phase": "inital_test_failed",
+                    "test_code": test_code,
+                    "pytest_stdout": result.stdout,
+                    "pytest_stderr": result.stderr,
+                    "tokens_used": tokens_used,
+                    "retries": supervisor.retry_count,
+                },
+            )
             if supervisor.should_stop():
                 return CycleResult(
                     target_name=target_name,
@@ -90,7 +102,12 @@ def run_cycle(
                     tokens_used=tokens_used,
                     retries=supervisor.retry_count,
                 )
-            last_critique = f"The generated test failed to run, here is the error: {result.stderr}"
+            last_critique = (
+                "The generated test failed to run against the original (unmutated target). "
+                "Pytest output:\n"
+                f"stdout:\n{result.stdout}\n"
+                f"stderr:\n{result.stderr}"
+            )
             supervisor.record_retry()
             continue
         else:
