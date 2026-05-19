@@ -1,31 +1,6 @@
 from testforge.orchestrator import run_cycle
 
 TARGETS: dict[str, str] = {
-    "parse_semver": """\
-def parse_semver(s: str) -> tuple[int, int, int]:
-    if not isinstance(s, str):
-        raise TypeError("semver must be a string")
-    parts = s.lstrip("v").split(".")
-    if len(parts) != 3:
-        raise ValueError("semver must have 3 components")
-    major, minor, patch = parts
-    if not (major.isdigit() and minor.isdigit() and patch.isdigit()):
-        raise ValueError("semver components must be non-negative integers")
-    return int(major), int(minor), int(patch)
-""",
-    "balanced_parens": """\
-def balanced_parens(s: str) -> bool:
-    pairs = {")": "(", "]": "[", "}": "{"}
-    stack: list[str] = []
-    for ch in s:
-        if ch in "([{":
-            stack.append(ch)
-        elif ch in ")]}":
-            if not stack or stack[-1] != pairs[ch]:
-                return False
-            stack.pop()
-    return not stack
-""",
     "round_half_even": """\
 def round_half_even(x: float, ndigits: int = 0) -> float:
     import math
@@ -43,6 +18,30 @@ def round_half_even(x: float, ndigits: int = 0) -> float:
         rounded = floor if floor % 2 == 0 else floor + 1
     return rounded / mult
 """,
+    "days_in_month": """\
+def days_in_month(year: int, month: int) -> int:
+    if month in (1, 3, 5, 7, 8, 10, 12):
+        return 31
+    if month in (4, 6, 9, 11):
+        return 30
+    if year % 400 == 0:
+        return 29
+    if year % 100 == 0:
+        return 28
+    if year % 4 == 0:
+        return 29
+    return 28
+""",
+    "max_subarray": """\
+def max_subarray(nums: list[int]) -> int:
+    if not nums:
+        return 0
+    current = best = nums[0]
+    for n in nums[1:]:
+        current = max(n, current + n)
+        best = max(best, current)
+    return best
+""",
 }
 
 CONFIGS: dict[str, dict[str, str]] = {
@@ -53,6 +52,11 @@ CONFIGS: dict[str, dict[str, str]] = {
     "heterogeneous": {
         "author_model": "openai/gpt-oss-120b:free",
         "judge_model": "poolside/laguna-m.1:free",
+    },
+    "no_judge": {
+        "author_model": "openai/gpt-oss-120b:free",
+        "judge_model": "openai/gpt-oss-120b:free",
+        "use_judge": False,
     },
 }
 

@@ -50,6 +50,7 @@ def run_cycle(
     *,
     author_model: str = "openai/gpt-oss-120b:free",
     judge_model: str = "poolside/laguna-m.1:free",
+    use_judge: bool = True,
 ) -> CycleResult:
     """
     Runs a full cycle on a single target function
@@ -81,7 +82,7 @@ def run_cycle(
                 target_name,
                 {
                     "target_name": target_name,
-                    "phase": "inital_test_failed",
+                    "phase": "initial_test_failed",
                     "test_code": test_code,
                     "pytest_stdout": result.stdout,
                     "pytest_stderr": result.stderr,
@@ -138,10 +139,20 @@ def run_cycle(
             # write result trace to log
             write_trace(target_name, trace)
 
-            # break out of loop if Supervisor gives reason to
+            # stop if all mutations killed
+            if not surviving_mutations:
+                stopped_reason = None
+                break
+
+            # stop if supervisor gives another reason to stop
+            # (e.g, run out of tokens allocated for experiment)
             stop = supervisor.should_stop()
-            if not surviving_mutations or stop:
+            if stop:
                 stopped_reason = stop
+                break
+
+            if not use_judge:
+                stopped_reason = "no_judge"
                 break
 
             # Judge provides feedback on the test case that passed on mutation
