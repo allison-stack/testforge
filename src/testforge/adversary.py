@@ -16,12 +16,26 @@ FEATURES TO IMPLEMENT
 import ast
 import re
 import subprocess
+import sys
 import tempfile
 from pathlib import Path
 
 from .llm import call_llm
 
 _PROMPT_PATH = Path(__file__).parent / "prompts" / "adversary.txt"
+_EXPECTED_LLM_MUTATIONS = 5
+
+
+def _top_level_function_name(code: str) -> str | None:
+    """Return the name of the first top-level function defined in `code`, or None."""
+    try:
+        tree = ast.parse(code)
+    except SyntaxError:
+        return None
+    for node in tree.body:
+        if isinstance(node, ast.FunctionDef):
+            return node.name
+    return None
 
 
 def generate_mutations(target_code: str) -> list[str]:
@@ -98,7 +112,11 @@ def generate_llm_mutations(
     )
 
     # llm to generates semantic mutations (mutmut handles the syntactic mutations)
-    text, tokens = call_llm(model, system_prompt, user_prompt)
+    # bump max_tokens — 5 mutations x full function source can exceed the default 2000
+    # and truncated blocks (missing ===END===) are silently dropped by the regex below
+    text, tokens = call_llm(model, system_prompt, user_prompt, max_tokens=4000)
+
+    expected_name = _top_level_function_name(target_code)
 
     # parse text into a list of mutated source strings
     extracted = re.findall(r"===MUTATION===\s*(.*?)\s*===END===", text, re.DOTALL)
@@ -109,9 +127,26 @@ def generate_llm_mutations(
         if not block or block == target_code.strip() or block in mutations:
             continue
         try:
-            ast.parse(block)
+            tree = ast.parse(block)
         # avoid adding mutations with syntax errors to mutations list
         except SyntaxError:
             continue
+        # the executor imports the mutated function by its original name; if the LLM
+        # renamed it (or wrapped it in something else), the import fails and pytest
+        # exits nonzero — which would be falsely scored as a kill. drop these.
+        if expected_name is not None:
+            has_match = any(
+                isinstance(n, ast.FunctionDef) and n.name == expected_name for n in tree.body
+            )
+            if not has_match:
+                continue
         mutations.append(block)
+
+    if len(mutations) < _EXPECTED_LLM_MUTATIONS:
+        print(
+            f"[adversary] warning: expected {_EXPECTED_LLM_MUTATIONS} mutations, "
+            f"got {len(mutations)} (extracted={len(extracted)}). "
+            "Likely truncation or post-parse filtering.",
+            file=sys.stderr,
+        )
     return mutations, tokens
