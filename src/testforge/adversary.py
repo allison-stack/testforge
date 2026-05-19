@@ -20,6 +20,8 @@ import sys
 import tempfile
 from pathlib import Path
 
+from openai import APIError
+
 from .llm import call_llm
 
 _PROMPT_PATH = Path(__file__).parent / "prompts" / "adversary.txt"
@@ -114,7 +116,18 @@ def generate_llm_mutations(
     # llm to generates semantic mutations (mutmut handles the syntactic mutations)
     # bump max_tokens — 5 mutations x full function source can exceed the default 2000
     # and truncated blocks (missing ===END===) are silently dropped by the regex below
-    text, tokens = call_llm(model, system_prompt, user_prompt, max_tokens=4000)
+    # APIError covers rate limits, timeouts, connection failures, and server errors;
+    # the LLM adversary is supplemental, so fall back to mutmut-only on failure
+    # rather than aborting the whole cycle.
+    try:
+        text, tokens = call_llm(model, system_prompt, user_prompt, max_tokens=4000)
+    except APIError as e:
+        print(
+            f"[adversary] LLM call failed ({type(e).__name__}: {e}). "
+            "Returning 0 mutations; cycle will continue with mutmut only.",
+            file=sys.stderr,
+        )
+        return [], 0
 
     expected_name = _top_level_function_name(target_code)
 
