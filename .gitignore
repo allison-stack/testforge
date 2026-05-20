@@ -218,3 +218,9 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# TestForge local-only artifacts
+scratchpad/
+mutants/
+traces.backup.*/
+traces.mutmut-only/
