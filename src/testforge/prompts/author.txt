@@ -19,3 +19,10 @@ OUTPUT SHAPE
         assert add(1, 2) == 3
         assert add(-1, -1) == -2
         assert add(0.1, 0.2) == pyrest.approx(0.3)
+
+ITERATION RULES (apply ONLY when the user prompt contains an ITERATION CONTEXT block)
+- The PREVIOUS TEST already passes on the original target. Preserve every assert verbatim.
+- ADD new asserts to detect each SURVIVING MUTATION. Pick inputs where the original and that mutation produce different outputs.
+- Do not rename the test function. Do not change its signature.
+- Output is still a single pytest function — combine prior asserts + new asserts into one body.
+- If JUDGE FEEDBACK suggests removing or replacing an assert, ignore that part. Only ADD.

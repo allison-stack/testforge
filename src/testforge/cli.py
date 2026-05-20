@@ -1,5 +1,6 @@
 import argparse
 
+from .models import AUTHOR_MODEL, JUDGE_MODEL
 from .orchestrator import run_cycle
 
 
@@ -11,12 +12,12 @@ def main() -> None:
     )
     parser.add_argument(
         "--author_model",
-        default="openai/gpt-oss-120b:free",
+        default=AUTHOR_MODEL,
         help="Name of LLM model to be used for Author agent",
     )
     parser.add_argument(
         "--judge_model",
-        default="z-ai/glm-4.5-air:free",
+        default=JUDGE_MODEL,
         help="Name of LLM model to be used for Judge model",
     )
     args = parser.parse_args()

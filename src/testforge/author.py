@@ -11,12 +11,18 @@ import re
 from pathlib import Path
 
 from .llm import call_llm
+from .models import AUTHOR_MODEL
 
 _PROMPT_PATH = Path(__file__).parent / "prompts" / "author.txt"
 
 
 def author(
-    target_code: str, model: str = "openai/gpt-oss-120b:free", critique: str | None = None
+    target_code: str,
+    model: str = AUTHOR_MODEL,
+    critique: str | None = None,
+    *,
+    previous_test: str | None = None,
+    surviving_mutations: list[str] | None = None,
 ) -> tuple[str, int]:
     """
     Generate a pytest test for target_code
@@ -25,6 +31,11 @@ def author(
         target_code: The full source of the function to test
         model: OpenRouter model
         critique: Judge feedback on how to improve test case
+        previous_test: The author's prior test (used as the anchor on retries so
+            the author augments existing assertions instead of rewriting).
+        surviving_mutations: Full source of each mutation the prior test failed
+            to detect, so the author can pick distinguishing inputs directly
+            rather than relying on the judge's prose alone.
 
     Returns:
         (test_code, tokens_used)
@@ -36,12 +47,29 @@ def author(
     user_prompt = f"""Write a single pytest function for the given target code:\n
     {target_code}"""
 
-    # if critique exists: previous test case not good enough as it passed on some mutation
-    # (mutation not killed)
-    if critique:
-        user_prompt += f"""\n\nThe previous test was weak,
-        it passed on some mutation during mutation testing.
-        Feedback to improve the test: {critique}"""
+    if previous_test is not None:
+        # retry with full iteration context — author should augment, not rewrite
+        user_prompt += (
+            "\n\nITERATION CONTEXT (this is a retry)\n"
+            "Your previous test passed on the original but missed some mutations.\n\n"
+            "PREVIOUS TEST (preserve every assertion, ADD new ones — do NOT rewrite):\n"
+            f"{previous_test}\n"
+        )
+        if surviving_mutations:
+            # cap to bound prompt size — in practice 1-3 survive on healthy targets
+            shown = surviving_mutations[:10]
+            numbered = "\n\n".join(f"Mutation {i + 1}:\n{m}" for i, m in enumerate(shown))
+            user_prompt += (
+                f"\nSURVIVING MUTATIONS (the previous test FAILED to detect these):\n{numbered}\n"
+            )
+        if critique:
+            user_prompt += f"\nJUDGE FEEDBACK: {critique}\n"
+    elif critique:
+        # legacy path: critique but no previous_test (e.g., initial_test_failed retry)
+        user_prompt += (
+            "\n\nThe previous test was weak, it passed on some mutation during mutation testing. "
+            f"Feedback to improve the test: {critique}"
+        )
 
     # llm generates test case
     text, tokens = call_llm(model, system_prompt, user_prompt)

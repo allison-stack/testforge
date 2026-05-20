@@ -14,6 +14,7 @@ WHY IT MATTERS
 from pathlib import Path
 
 from .llm import call_llm
+from .models import JUDGE_MODEL
 
 _PROMPT_PATH = Path(__file__).parent / "prompts" / "judge.txt"
 
@@ -22,7 +23,7 @@ def judge(
     target_code: str,
     test_code: str,
     surviving_mutations: list[str],
-    model: str = "poolside/laguna-m.1:free",
+    model: str = JUDGE_MODEL,
 ) -> tuple[str, int]:
     """
     Provide critique on a test that failed to catch some mutations

@@ -19,7 +19,7 @@ class Supervisor:
 
     max_retries: int = 2
     max_tokens: int = 20_000
-    max_seconds: int = 120
+    max_seconds: int = 600
 
     tokens_used: int = 0
     retry_count: int = 0

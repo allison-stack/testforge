@@ -23,9 +23,19 @@ from pathlib import Path
 from openai import APIError
 
 from .llm import call_llm
+from .models import ADVERSARY_MODEL
 
 _PROMPT_PATH = Path(__file__).parent / "prompts" / "adversary.txt"
 _EXPECTED_LLM_MUTATIONS = 5
+
+# mutmut is deterministic - cache its output per target source so repeated
+# calls within a process don't re-spawn the subprocess
+_MUTMUT_CACHE: dict[str, list[str]] = {}
+
+
+def clear_mutation_cache() -> None:
+    """Reset the mutmut cache. Useful in tests; not called by production code."""
+    _MUTMUT_CACHE.clear()
 
 
 def _top_level_function_name(code: str) -> str | None:
@@ -42,7 +52,11 @@ def _top_level_function_name(code: str) -> str | None:
 
 def generate_mutations(target_code: str) -> list[str]:
     """
-    Generate mutated versions of the target function
+    Generate mutated versions of the target function.
+
+    Results are cached per `target_code` for the lifetime of the process,
+    because mutmut is a pure function of its input. Repeated calls with the
+    same source string skip the subprocess entirely.
 
     Args:
         target_code: Full source of the target function
@@ -50,6 +64,10 @@ def generate_mutations(target_code: str) -> list[str]:
     Returns:
         List of mutated source strings
     """
+    if target_code in _MUTMUT_CACHE:
+        # shallow-copy so caller mutation can't corrupt the cached entry
+        return list(_MUTMUT_CACHE[target_code])
+
     # create individual temporary environment for mutations
     with tempfile.TemporaryDirectory() as d:
         Path(d, "target.py").write_text(target_code, encoding="utf-8")
@@ -88,12 +106,11 @@ def generate_mutations(target_code: str) -> list[str]:
             mutated = patched.stdout
             if mutated:
                 mutations.append(mutated)
-        return mutations
+        _MUTMUT_CACHE[target_code] = mutations
+        return list(mutations)
 
 
-def generate_llm_mutations(
-    target_code: str, model: str = "openai/gpt-oss-120b:free"
-) -> tuple[list[str], int]:
+def generate_llm_mutations(target_code: str, model: str = ADVERSARY_MODEL) -> tuple[list[str], int]:
     """
     Generate semantic mutations using an LLM adversary.
 

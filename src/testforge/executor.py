@@ -12,10 +12,12 @@ WHY IT MATTERS
 - introduces deterministic verification into the pipeline
 """
 
+import shutil
 import subprocess
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Self
 
 
 @dataclass(frozen=True)
@@ -36,11 +38,100 @@ class ExecutorResult:
     timed_out: bool
 
 
+class ExecutorSession:
+    """
+    Long-lived Docker container for executing many test runs inside one cycle.
+
+    Each cycle's executor calls (test on original + test on every mutation) are
+    routed through one container started here. We rewrite target.py on the host
+    side and `docker exec pytest` instead of `docker run --rm` per call —
+    eliminating ~0.5-1s of container startup per mutation, which is the
+    dominant fraction of wall-clock on mutation-heavy iterations.
+    """
+
+    def __init__(
+        self,
+        image: str = "testforge-sandbox",
+        timeout_seconds: int = 60,
+    ) -> None:
+        self.image = image
+        self.timeout_seconds = timeout_seconds
+        self._tmpdir: str | None = None
+        self._container_id: str | None = None
+
+    def __enter__(self) -> Self:
+        self._tmpdir = tempfile.mkdtemp()
+        # start a sleep container so we can docker-exec pytest into it repeatedly
+        result = subprocess.run(
+            [
+                "docker",
+                "run",
+                "-d",
+                "--rm",
+                "-v",
+                f"{self._tmpdir}:/work",
+                "-w",
+                "/work",
+                self.image,
+                "sleep",
+                "3600",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        self._container_id = result.stdout.strip()
+        return self
+
+    def __exit__(self, *_exc: object) -> None:
+        if self._container_id:
+            subprocess.run(
+                ["docker", "rm", "-f", self._container_id],
+                capture_output=True,
+            )
+            self._container_id = None
+        if self._tmpdir:
+            shutil.rmtree(self._tmpdir, ignore_errors=True)
+            self._tmpdir = None
+
+    def run(self, target_code: str, test_code: str) -> ExecutorResult:
+        """Run `test_code` against `target_code` in the persistent container."""
+        if self._container_id is None or self._tmpdir is None:
+            raise RuntimeError("ExecutorSession.run() called outside a 'with' block")
+        # overwriting target.py invalidates Python's .pyc cache via mtime; pytest
+        # itself is a fresh process per docker-exec so sys.modules is clean.
+        Path(self._tmpdir, "target.py").write_text(target_code, encoding="utf-8")
+        Path(self._tmpdir, "test_target.py").write_text(test_code, encoding="utf-8")
+        try:
+            result = subprocess.run(
+                ["docker", "exec", self._container_id, "pytest", "-q"],
+                capture_output=True,
+                text=True,
+                timeout=self.timeout_seconds,
+            )
+            return ExecutorResult(
+                passed=result.returncode == 0,
+                stdout=result.stdout,
+                stderr=result.stderr,
+                timed_out=False,
+            )
+        except subprocess.TimeoutExpired as e:
+            return ExecutorResult(
+                passed=False,
+                stdout=str(e.stdout) or "",
+                stderr=str(e.stderr) or "",
+                timed_out=True,
+            )
+
+
 def run_test(
     target_code: str, test_code: str, *, image: str = "testforge-sandbox", timeout_seconds: int = 60
 ) -> ExecutorResult:
     """
-    Run tests against some target code in docker sandbox
+    Run tests against some target code in docker sandbox (one-shot convenience).
+
+    For batch usage inside a single cycle, prefer ExecutorSession directly to
+    amortize container startup across many mutations.
 
     Args:
         target_code: Full source of the target function
@@ -49,31 +140,7 @@ def run_test(
         timeout_seconds: timeout limit (default 60 seconds)
 
     Returns:
-        List of mutated source strings
+        ExecutorResult with pass/fail + stdout/stderr
     """
-    # create temp Docker environment to run tests in
-    with tempfile.TemporaryDirectory() as d:
-        Path(d, "target.py").write_text(target_code, encoding="utf-8")
-        Path(d, "test_target.py").write_text(test_code, encoding="utf-8")
-        try:
-            # mount /work directory into Docker container
-            result = subprocess.run(
-                ["docker", "run", "--rm", "-v", f"{d}:/work", "-w", "/work", image, "pytest", "-q"],
-                capture_output=True,
-                text=True,
-                timeout=timeout_seconds,
-            )
-            return ExecutorResult(
-                passed=result.returncode == 0,
-                stdout=result.stdout,
-                stderr=result.stderr,
-                timed_out=False,
-            )
-        # timeout case
-        except subprocess.TimeoutExpired as e:
-            return ExecutorResult(
-                passed=False,
-                stdout=str(e.stdout) or "",
-                stderr=str(e.stderr) or "",
-                timed_out=True,
-            )
+    with ExecutorSession(image=image, timeout_seconds=timeout_seconds) as session:
+        return session.run(target_code, test_code)
