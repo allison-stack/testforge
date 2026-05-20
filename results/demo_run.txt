@@ -1,0 +1,41 @@
+function             config          kill_rate    mutations          tokens     stopped         retries
+--------------------------------------------------------------------------------------------------------------
+[1/9] running roman_to_int/baseline...
+  iter 1: killed 46/47 (98%), 1 survivors
+roman_to_int         baseline        98%          46/47              2556       baseline        0
+[2/9] running roman_to_int/homogeneous...
+  iter 1: killed 45/47 (96%), 2 survivors
+  iter 2: killed 46/47 (98%), 1 survivors
+  iter 3: killed 46/47 (98%), 1 survivors
+roman_to_int         homogeneous     98%          46/47              10856      max_retries     2
+[3/9] running roman_to_int/heterogeneous...
+  iter 1: killed 45/47 (96%), 2 survivors
+  iter 2: killed 46/47 (98%), 1 survivors
+  iter 3: killed 46/47 (98%), 1 survivors
+roman_to_int         heterogeneous   98%          46/47              12496      max_retries     2
+[4/9] running balanced_brackets/baseline...
+  iter 1: killed 25/26 (96%), 1 survivors
+balanced_brackets    baseline        96%          25/26              2327       baseline        0
+[5/9] running balanced_brackets/homogeneous...
+  iter 1: killed 23/26 (88%), 3 survivors
+  iter 2: killed 25/26 (96%), 1 survivors
+  iter 3: killed 25/26 (96%), 1 survivors
+balanced_brackets    homogeneous     96%          25/26              11864      max_retries     2
+[6/9] running balanced_brackets/heterogeneous...
+  iter 1: killed 23/26 (88%), 3 survivors
+  iter 2: killed 24/26 (92%), 2 survivors
+  iter 3: killed 23/26 (88%), 3 survivors
+balanced_brackets    heterogeneous   88%          23/26              12781      max_retries     2
+[7/9] running is_valid_isbn10/baseline...
+  iter 1: killed 41/44 (93%), 3 survivors
+is_valid_isbn10      baseline        93%          41/44              2660       baseline        0
+[8/9] running is_valid_isbn10/homogeneous...
+  iter 1: killed 41/44 (93%), 3 survivors
+  iter 2: killed 42/44 (95%), 2 survivors
+  iter 3: initial test failed (will retry)
+is_valid_isbn10      homogeneous     0%           0/0                12084      initial_test_failed 2
+[9/9] running is_valid_isbn10/heterogeneous...
+  iter 1: killed 41/44 (93%), 3 survivors
+  iter 2: killed 40/44 (91%), 4 survivors
+  iter 3: killed 42/44 (95%), 2 survivors
+is_valid_isbn10      heterogeneous   95%          42/44              14371      max_retries     2

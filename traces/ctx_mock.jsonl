@@ -1,0 +1,4 @@
+{"target_name": "ctx_mock", "phase": "mutation_pass", "test_code": "T1", "mutations_total": 3, "mutations_mutmut": 3, "mutations_llm": 0, "mutations_killed": 3, "kill_rate": 1.0, "tokens_used": 10, "retries": 0}
+{"target_name": "ctx_mock", "phase": "mutation_pass", "test_code": "T1", "mutations_total": 3, "mutations_mutmut": 3, "mutations_llm": 0, "mutations_killed": 0, "kill_rate": 0.0, "tokens_used": 10, "retries": 0}
+{"target_name": "ctx_mock", "phase": "mutation_pass", "test_code": "T2", "mutations_total": 3, "mutations_mutmut": 3, "mutations_llm": 0, "mutations_killed": 0, "kill_rate": 0.0, "tokens_used": 25, "retries": 1}
+{"target_name": "ctx_mock", "phase": "mutation_pass", "test_code": "T3", "mutations_total": 3, "mutations_mutmut": 3, "mutations_llm": 0, "mutations_killed": 0, "kill_rate": 0.0, "tokens_used": 40, "retries": 2}

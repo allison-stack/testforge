@@ -1,22 +1,11 @@
-function             config          kill_rate    mutations          tokens     stopped         retries
-------------------------------------------------------------------------------------------
-clamp                homogeneous     100%         2/2                582        all_killed      0
-clamp                heterogeneous   100%         2/2                592        all_killed      0
-is_palindrome        homogeneous     100%         11/11              958        all_killed      1
-is_palindrome        heterogeneous   100%         11/11              407        all_killed      0
-fizzbuzz             homogeneous     100%         22/22              442        all_killed      0
-fizzbuzz             heterogeneous   100%         22/22              476        all_killed      0
-binary_search        homogeneous     100%         20/20              596        all_killed      0
-binary_search        heterogeneous   100%         20/20              592        all_killed      0
-running_max          homogeneous     100%         11/11              466        all_killed      0
-running_max          heterogeneous   100%         11/11              465        all_killed      0
-caesar_cipher        homogeneous     100%         19/19              486        all_killed      0
-caesar_cipher        heterogeneous   100%         19/19              507        all_killed      0
-merge_intervals      homogeneous     100%         23/23              539        all_killed      0
-merge_intervals      heterogeneous   100%         23/23              537        all_killed      0
-luhn_check           homogeneous     100%         27/27              654        all_killed      0
-luhn_check           heterogeneous   100%         27/27              568        all_killed      0
-run_length_encode    homogeneous     100%         26/26              477        all_killed      0
-run_length_encode    heterogeneous   100%         26/26              551        all_killed      0
-count_change         homogeneous     100%         17/17              564        all_killed      0
-count_change         heterogeneous   100%         17/17              554        all_killed      0
+uv run python -c "
+from scripts.ablation import TARGETS
+from testforge.orchestrator import run_cycle
+result = run_cycle(
+    TARGETS['parse_semver'],
+    target_name='parse_semver_llm_smoke',
+    use_llm_adversary=True,
+)
+print(f"kill_rate={result.kill_rate} mutations={result.mutations_killed}/{result.mutations_total}
+retries={result.retries} tokens={result.tokens_used}")
+" && tail -1 traces/parse_semver_llm_smoke.jsonl | python -m json.tool

@@ -1,0 +1,1 @@
+{"target_name": "cb_smoke", "phase": "mutation_pass", "test_code": "from target import add\n\ndef test_add():\n    assert add(1, 2) == 3\n    assert add(-5, 10) == 5\n    assert add(0, 0) == 0", "mutations_total": 1, "mutations_mutmut": 1, "mutations_llm": 0, "mutations_killed": 1, "kill_rate": 1.0, "tokens_used": 374, "retries": 0}

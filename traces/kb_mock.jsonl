@@ -1,0 +1,3 @@
+{"target_name": "kb_mock", "phase": "mutation_pass", "test_code": "T1", "mutations_total": 5, "mutations_mutmut": 5, "mutations_llm": 0, "mutations_killed": 4, "kill_rate": 0.8, "tokens_used": 10, "retries": 0}
+{"target_name": "kb_mock", "phase": "mutation_pass", "test_code": "T2", "mutations_total": 5, "mutations_mutmut": 5, "mutations_llm": 0, "mutations_killed": 2, "kill_rate": 0.4, "tokens_used": 25, "retries": 1}
+{"target_name": "kb_mock", "phase": "initial_test_failed", "test_code": "BROKEN", "pytest_stdout": "AssertionError", "pytest_stderr": "", "tokens_used": 40, "retries": 2}
